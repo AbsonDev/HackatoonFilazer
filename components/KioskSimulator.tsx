@@ -25,6 +25,37 @@ export const KioskSimulator: React.FC<KioskSimulatorProps> = ({ flow }) => {
     setIsPrinting(false);
   }, [flow.flow_id]);
 
+  // Idle Timer Logic (Auto-Reset)
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+
+    const resetToStart = () => {
+      setHistory([]);
+      setInputs({});
+      setValidationErrors({});
+      setCurrentScreenId(flow.start_screen_id);
+    };
+
+    const resetTimer = () => {
+      clearTimeout(timer);
+      // Only set timer if not on start screen and not printing
+      if (currentScreenId !== flow.start_screen_id && !isPrinting) {
+        timer = setTimeout(resetToStart, 30000); // 30 seconds inactivity limit
+      }
+    };
+
+    // Events to detect activity
+    const activityEvents = ['mousedown', 'mousemove', 'keydown', 'touchstart', 'click'];
+    activityEvents.forEach(event => window.addEventListener(event, resetTimer));
+
+    resetTimer(); // Initialize
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      activityEvents.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [currentScreenId, isPrinting, flow.start_screen_id]);
+
   const currentScreen = flow.screens[currentScreenId];
 
   if (!currentScreen) {
@@ -140,6 +171,9 @@ export const KioskSimulator: React.FC<KioskSimulatorProps> = ({ flow }) => {
             </label>
             <input
               type={comp.type === 'input_cpf' ? 'tel' : 'text'}
+              inputMode={comp.type === 'input_cpf' ? 'numeric' : 'text'}
+              autoFocus
+              autoComplete="off"
               className={`w-full p-4 border-2 rounded-xl outline-none transition-all text-lg
                 ${validationErrors[comp.id] ? 'border-red-500 bg-red-50 text-red-900' : 'border-gray-200 focus:ring-2'}`}
               style={{ 
@@ -221,7 +255,10 @@ export const KioskSimulator: React.FC<KioskSimulatorProps> = ({ flow }) => {
           </div>
 
           {/* Body */}
-          <div className="flex-1 p-6 flex flex-col animate-fadeIn">
+          <div 
+            key={currentScreenId} 
+            className="flex-1 p-6 flex flex-col animate-slide-up"
+          >
             <div className="mb-8">
               {currentScreen.type === 'success' && (
                 <div className="flex justify-center mb-4">

@@ -1,11 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FlowEditor } from './components/FlowEditor';
 import { KioskSimulator } from './components/KioskSimulator';
 import { INITIAL_FLOW } from './constants';
 import { Flow } from './types';
 
 function App() {
-  const [currentFlow, setCurrentFlow] = useState<Flow>(INITIAL_FLOW);
+  // Initialize flow from localStorage if available, otherwise use default
+  const [currentFlow, setCurrentFlow] = useState<Flow>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('filazero_flow');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error("Failed to parse saved flow", e);
+        }
+      }
+    }
+    return INITIAL_FLOW;
+  });
+
+  // Persist flow changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('filazero_flow', JSON.stringify(currentFlow));
+  }, [currentFlow]);
 
   return (
     <div className="flex flex-col md:flex-row h-screen w-full overflow-hidden">
