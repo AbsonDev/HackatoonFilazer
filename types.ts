@@ -4,6 +4,11 @@ export type ComponentType = 'button' | 'input_text' | 'input_cpf' | 'text_block'
 
 export type ActionType = 'goto_screen' | 'enqueue' | 'restart';
 
+export interface ValidationRule {
+  regex: string;
+  message: string;
+}
+
 export interface UIComponent {
   id: string;
   type: ComponentType;
@@ -13,6 +18,13 @@ export interface UIComponent {
   action?: ActionType;
   target?: string; // Target screen ID or Queue ID logic
   primary?: boolean; // Styling hint
+  validation?: ValidationRule; // New: Regex validation
+}
+
+export interface Theme {
+  primaryColor: string;
+  secondaryColor?: string;
+  fontFamily?: string;
 }
 
 export interface Screen {
@@ -27,6 +39,7 @@ export interface Flow {
   flow_id: string;
   location_id: string;
   start_screen_id: string;
+  theme?: Theme; // New: Global theming
   screens: Record<string, Screen>;
 }
 

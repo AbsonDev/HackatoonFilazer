@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Flow } from '../types';
 import { generateFlowFromPrompt } from '../services/geminiService';
 import { Code, Play, Wand2, Loader2, Save, Layers } from 'lucide-react';
@@ -15,16 +15,37 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ flow, onFlowUpdate }) =>
   const [activeTab, setActiveTab] = useState<'ai' | 'json'>('ai');
   const [error, setError] = useState<string | null>(null);
 
+  // Update local text if flow prop updates externally (e.g. via AI)
+  useEffect(() => {
+    setJsonText(JSON.stringify(flow, null, 2));
+  }, [flow]);
+
   const handleManualJsonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setJsonText(e.target.value);
-    try {
-      const parsed = JSON.parse(e.target.value);
-      onFlowUpdate(parsed);
-      setError(null);
-    } catch (err) {
-      setError("Invalid JSON format");
-    }
   };
+
+  // Debounce logic for parsing JSON
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      try {
+        const parsed = JSON.parse(jsonText);
+        // Simple basic validation
+        if (!parsed.screens || !parsed.start_screen_id) {
+            throw new Error("Missing required 'screens' or 'start_screen_id'");
+        }
+        onFlowUpdate(parsed);
+        setError(null);
+      } catch (err: any) {
+        // Only set error if it's strictly a syntax error or our custom error, 
+        // to avoid annoying flashing red while typing.
+        setError(err.message || "Invalid JSON format");
+      }
+    }, 800); // 800ms debounce
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [jsonText, onFlowUpdate]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -33,7 +54,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ flow, onFlowUpdate }) =>
     try {
       const newFlow = await generateFlowFromPrompt(prompt);
       onFlowUpdate(newFlow);
-      setJsonText(JSON.stringify(newFlow, null, 2));
+      // jsonText will be updated by the first useEffect
     } catch (err) {
       setError("AI Generation failed. Please check your API Key and try again.");
     } finally {
@@ -154,7 +175,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ flow, onFlowUpdate }) =>
                 <span>Server-Driven UI Protocol v1</span>
                 <div className="flex items-center gap-1 text-green-500">
                     <Save size={12}/>
-                    <span>Auto-saved</span>
+                    <span>Auto-saved (Debounced)</span>
                 </div>
              </div>
           </div>

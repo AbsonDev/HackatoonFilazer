@@ -17,6 +17,10 @@ export const INITIAL_FLOW: Flow = {
   flow_id: "default-clinic-flow",
   location_id: "unit-downtown",
   start_screen_id: "welcome",
+  theme: {
+    primaryColor: "#2563eb", // Default Tailwind Blue-600
+    fontFamily: "Inter"
+  },
   screens: {
     "welcome": {
       id: "welcome",
@@ -51,7 +55,11 @@ export const INITIAL_FLOW: Flow = {
         {
           id: "inp_cpf",
           type: "input_cpf",
-          placeholder: "000.000.000-00"
+          placeholder: "000.000.000-00",
+          validation: {
+            regex: "^\\d{11}$",
+            message: "CPF inválido. Digite apenas 11 números."
+          }
         },
         {
           id: "btn_confirm_cpf",
